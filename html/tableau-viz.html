@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Most Stylish Cities – Style Index 2024</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            font-size: 13px;
+            color: #333;
+        }
+
+        /* ── Top Header ─────────────────────────────────── */
+        .tb-header {
+            background: #fff;
+            border-bottom: 1px solid #d9d9d9;
+            padding: 8px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+        .tb-header-left { display: flex; flex-direction: column; gap: 1px; }
+        .tb-viz-title   { font-size: 15px; font-weight: 700; color: #1a1a1a; }
+        .tb-viz-author  { font-size: 11px; color: #888; }
+        .tb-header-right { display: flex; gap: 6px; }
+        .tb-head-btn {
+            background: none;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            padding: 3px 8px;
+            font-size: 11px;
+            color: #555;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .tb-head-btn:hover { background: #f0f0f0; }
+
+        /* ── Filter Bar ──────────────────────────────────── */
+        .tb-filters {
+            background: #f7f7f7;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 6px 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        .tb-filter-label { font-size: 11px; color: #666; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+        .tb-chip {
+            background: #fff;
+            border: 1px solid #ccc;
+            border-radius: 2px;
+            padding: 3px 10px;
+            font-size: 11px;
+            cursor: pointer;
+            color: #444;
+            transition: all 0.12s;
+        }
+        .tb-chip:hover  { border-color: #999; background: #f0f0f0; }
+        .tb-chip.active { background: #4e79a7; color: #fff; border-color: #4e79a7; }
+
+        /* ── Sort Bar ────────────────────────────────────── */
+        .tb-sortbar {
+            background: #fafafa;
+            border-bottom: 1px solid #e8e8e8;
+            padding: 4px 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        .tb-sort-label { font-size: 11px; color: #888; }
+        .tb-sort-btn {
+            background: none;
+            border: none;
+            font-size: 11px;
+            color: #4e79a7;
+            cursor: pointer;
+            text-decoration: underline;
+            padding: 0;
+        }
+        .tb-sort-btn:hover { color: #2c5282; }
+
+        /* ── Chart Area ──────────────────────────────────── */
+        .tb-canvas-wrap {
+            flex: 1;
+            padding: 14px 18px 8px;
+            position: relative;
+            overflow: hidden;
+        }
+        #myChart { width: 100% !important; height: 100% !important; }
+
+        /* ── Tooltip override (Chart.js uses canvas tooltip, this is extra) ── */
+
+        /* ── Bottom Toolbar ──────────────────────────────── */
+        .tb-toolbar {
+            background: #f5f5f5;
+            border-top: 1px solid #d9d9d9;
+            height: 34px;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+        .tb-logo {
+            font-size: 14px;
+            font-weight: 700;
+            color: #E8762D;
+            letter-spacing: -0.5px;
+            font-style: italic;
+        }
+        .tb-logo span { color: #5b5b5b; font-style: normal; font-size: 10px; font-weight: 400; margin-left: 4px; }
+        .tb-tools { display: flex; gap: 1px; }
+        .tb-tool-btn {
+            background: none;
+            border: 1px solid transparent;
+            padding: 3px 6px;
+            cursor: pointer;
+            color: #666;
+            font-size: 13px;
+            border-radius: 2px;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+        }
+        .tb-tool-btn:hover { background: #e2e2e2; border-color: #bbb; }
+        .tb-tool-btn.disabled { opacity: 0.35; cursor: default; }
+        .tb-tool-btn.disabled:hover { background: none; border-color: transparent; }
+        .tb-tooltip-text {
+            font-size: 10px;
+            color: #888;
+            align-self: center;
+            margin-right: 6px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <div class="tb-header">
+        <div class="tb-header-left">
+            <div class="tb-viz-title">Most Stylish Cities in the World – Style Index 2024</div>
+            <div class="tb-viz-author">by Ethan White &nbsp;·&nbsp; Published to Tableau Public</div>
+        </div>
+        <div class="tb-header-right">
+            <button class="tb-head-btn" onclick="toggleFullscreen()">⛶ Full Screen</button>
+            <button class="tb-head-btn">↗ Share</button>
+            <button class="tb-head-btn">⬇ Download</button>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="tb-filters">
+        <span class="tb-filter-label">Region:</span>
+        <button class="tb-chip active" onclick="filterRegion('All', this)">All</button>
+        <button class="tb-chip" onclick="filterRegion('Europe', this)">Europe</button>
+        <button class="tb-chip" onclick="filterRegion('Asia', this)">Asia</button>
+        <button class="tb-chip" onclick="filterRegion('Americas', this)">Americas</button>
+        <button class="tb-chip" onclick="filterRegion('Other', this)">Other</button>
+    </div>
+
+    <!-- Sort Bar -->
+    <div class="tb-sortbar">
+        <span class="tb-sort-label">Sort by:</span>
+        <button class="tb-sort-btn" onclick="sortBy('value')">Score ↕</button>
+        &nbsp;·&nbsp;
+        <button class="tb-sort-btn" onclick="sortBy('alpha')">City A–Z ↕</button>
+    </div>
+
+    <!-- Chart -->
+    <div class="tb-canvas-wrap">
+        <canvas id="myChart"></canvas>
+    </div>
+
+    <!-- Bottom Toolbar -->
+    <div class="tb-toolbar">
+        <div style="display:flex;align-items:center;gap:8px;">
+            <span class="tb-logo">tableau <span>Public</span></span>
+        </div>
+        <div style="display:flex;align-items:center;">
+            <span class="tb-tooltip-text" id="hover-info">Hover over a bar for details</span>
+            <div class="tb-tools">
+                <button class="tb-tool-btn disabled" title="Undo">↩</button>
+                <button class="tb-tool-btn disabled" title="Redo">↪</button>
+                <button class="tb-tool-btn" title="Revert All" onclick="revertAll()">⟳</button>
+                <button class="tb-tool-btn" title="Refresh">⚡</button>
+                <div style="width:1px;background:#ccc;margin:4px 3px;"></div>
+                <button class="tb-tool-btn" title="Share">⇧</button>
+                <button class="tb-tool-btn" title="Download as Image" onclick="downloadChart()">⬇</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+// ── Data ──────────────────────────────────────────────────────────────────────
+const ALL_DATA = [
+    { city: 'Paris',        score: 94, region: 'Europe',   color: '#4e79a7' },
+    { city: 'Milan',        score: 91, region: 'Europe',   color: '#4e79a7' },
+    { city: 'Tokyo',        score: 88, region: 'Asia',     color: '#f28e2b' },
+    { city: 'New York',     score: 85, region: 'Americas', color: '#59a14f' },
+    { city: 'London',       score: 82, region: 'Europe',   color: '#4e79a7' },
+    { city: 'Seoul',        score: 80, region: 'Asia',     color: '#f28e2b' },
+    { city: 'Dubai',        score: 76, region: 'Other',    color: '#76b7b2' },
+    { city: 'Copenhagen',   score: 75, region: 'Europe',   color: '#4e79a7' },
+    { city: 'Los Angeles',  score: 73, region: 'Americas', color: '#59a14f' },
+    { city: 'Shanghai',     score: 71, region: 'Asia',     color: '#f28e2b' },
+    { city: 'Sydney',       score: 68, region: 'Other',    color: '#76b7b2' },
+    { city: 'Mexico City',  score: 65, region: 'Americas', color: '#59a14f' },
+    { city: 'Mumbai',       score: 63, region: 'Asia',     color: '#f28e2b' },
+    { city: 'São Paulo',    score: 61, region: 'Americas', color: '#59a14f' },
+];
+
+const REGION_DESCRIPTIONS = {
+    Europe:   'Fashion capitals of the old world — where the rules were written.',
+    Asia:     'Tech-forward street style meets high fashion luxury.',
+    Americas: 'Eclectic, bold, and always pushing boundaries.',
+    Other:    'Rising stars redefining global style.',
+};
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let currentRegion = 'All';
+let currentSort   = 'value';
+let activeIndex   = null;
+
+// ── Chart Setup ───────────────────────────────────────────────────────────────
+const ctx = document.getElementById('myChart').getContext('2d');
+
+function getFiltered() {
+    let data = currentRegion === 'All'
+        ? [...ALL_DATA]
+        : ALL_DATA.filter(d => d.region === currentRegion);
+
+    if (currentSort === 'value') data.sort((a, b) => b.score - a.score);
+    else                          data.sort((a, b) => a.city.localeCompare(b.city));
+
+    return data;
+}
+
+function buildChartData(filtered) {
+    return {
+        labels: filtered.map(d => d.city),
+        datasets: [{
+            label: 'Style Index Score',
+            data:  filtered.map(d => d.score),
+            backgroundColor: filtered.map((d, i) =>
+                activeIndex === null || activeIndex === i
+                    ? d.color
+                    : d.color + '55'
+            ),
+            borderColor: filtered.map(d => d.color),
+            borderWidth: 1,
+            borderRadius: 3,
+            borderSkipped: false,
+        }]
+    };
+}
+
+const chart = new Chart(ctx, {
+    type: 'bar',
+    data: buildChartData(getFiltered()),
+    options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 350, easing: 'easeInOutQuart' },
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                callbacks: {
+                    title: (items) => {
+                        const d = getFiltered()[items[0].dataIndex];
+                        return `${d.city}  (${d.region})`;
+                    },
+                    label: (item) => `  Style Index: ${item.raw} / 100`,
+                    afterLabel: (item) => {
+                        const d = getFiltered()[item.dataIndex];
+                        return `  ${REGION_DESCRIPTIONS[d.region]}`;
+                    }
+                },
+                backgroundColor: 'rgba(30,30,30,0.92)',
+                titleFont: { size: 13, weight: 'bold' },
+                bodyFont:  { size: 12 },
+                padding: 10,
+                cornerRadius: 4,
+            }
+        },
+        scales: {
+            x: {
+                min: 40,
+                max: 100,
+                grid: { color: '#ebebeb' },
+                ticks: {
+                    color: '#888',
+                    font: { size: 11 },
+                    callback: v => v + '%',
+                },
+                title: {
+                    display: true,
+                    text: 'Style Index Score (out of 100)',
+                    color: '#999',
+                    font: { size: 11 },
+                }
+            },
+            y: {
+                grid: { display: false },
+                ticks: { color: '#444', font: { size: 12 } },
+            }
+        },
+        onHover: (event, elements) => {
+            const info = document.getElementById('hover-info');
+            if (elements.length > 0) {
+                const i = elements[0].index;
+                const d = getFiltered()[i];
+                info.textContent = `${d.city} · Score: ${d.score} · ${d.region}`;
+                activeIndex = i;
+            } else {
+                info.textContent = 'Hover over a bar for details';
+                activeIndex = null;
+            }
+            redraw();
+        },
+        onClick: (event, elements) => {
+            if (elements.length > 0) {
+                const i  = elements[0].index;
+                const d  = getFiltered()[i];
+                activeIndex = (activeIndex === i) ? null : i;
+                redraw();
+            }
+        },
+    }
+});
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function redraw() {
+    const filtered = getFiltered();
+    chart.data = buildChartData(filtered);
+    chart.update('none');
+}
+
+function filterRegion(region, btn) {
+    currentRegion = region;
+    activeIndex   = null;
+    document.querySelectorAll('.tb-chip').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    const filtered = getFiltered();
+    chart.data = buildChartData(filtered);
+    chart.update();
+}
+
+function sortBy(type) {
+    currentSort = type;
+    activeIndex = null;
+    const filtered = getFiltered();
+    chart.data = buildChartData(filtered);
+    chart.update();
+}
+
+function revertAll() {
+    currentRegion = 'All';
+    currentSort   = 'value';
+    activeIndex   = null;
+    document.querySelectorAll('.tb-chip').forEach(c => c.classList.remove('active'));
+    document.querySelector('.tb-chip').classList.add('active');
+    const filtered = getFiltered();
+    chart.data = buildChartData(filtered);
+    chart.update();
+}
+
+function downloadChart() {
+    const a = document.createElement('a');
+    a.href     = document.getElementById('myChart').toDataURL('image/png');
+    a.download = 'style-index-2024.png';
+    a.click();
+}
+
+function toggleFullscreen() {
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+    else document.exitFullscreen();
+}
+</script>
+</body>
+</html>
